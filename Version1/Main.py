@@ -26,7 +26,7 @@ class Aid(object):
 		self.colour = backcolour
 
 	#Define a function to add new rects to the instance
-	def addRect(self, name, imgLoc="", width="", height="", colour=(255, 0, 0)):
+	def addRect(self, name, imgLoc="", width="", height="", colour=(255, 0, 0), layer=0):
 
 		#Check to make sure at least one set of parameters needed for the creation of the rectangle is provided
 		if imgLoc == "" and width == "" and height == "":
@@ -40,8 +40,21 @@ class Aid(object):
 		else:
 			setattr(self, name, Rectangle(image=pygame.image.load(imgLoc)))
 
-		#Add the name of the rectangle to the array
-		self.rectangles.append(name)
+		#Try to add the rectangle to the correct layer list inside of the rectangles list
+		try:
+			self.rectangles[layer].append(name)
+		#If that list doens't exist
+		except:
+			#Start a while loop
+			while 1:
+				#Try to add the layer in again
+				try:
+					self.rectangles[layer].append(name)
+					#If the name is added, break out of the loop
+					break
+				except:
+					#If the layer list is not pressent, add another list to rectangles
+					self.rectangles.append([])
 
 	#Define a function to run the commands the need running last in a game loop
 	def closingCommands(self):
@@ -64,24 +77,28 @@ class Aid(object):
 
 		#For every rectangle in rectangles array
 		for rects in self.rectangles:
-			#Check if the rectangle wants to be drawn
-			if eval("self.{}".format(rects)).drawing:
-				#If the rectangle has an image to draw
-				if eval("self.{}".format(rects)).type == 0:
-					#Draw the image
-					self.screen.blit(eval("self.{}".format(rects)).image, eval("self.{}".format(rects)).rect)
-				#If the rectangle has no image
-				else:
-					#Draw a block coloured rectangle
-					pygame.draw.rect(self.screen, eval("self.{}".format(rects)).colour, eval("self.{}".format(rects)).rect)
+			#Iterate through the layers, so the game is drawn in the desired order
+			for layers in rects:
+				#Check if the rectangle wants to be drawn
+				if eval("self.{}".format(layers)).drawing:
+					#If the rectangle has an image to draw
+					if eval("self.{}".format(layers)).type == 0:
+						#Draw the image
+						self.screen.blit(eval("self.{}".format(layers)).image, eval("self.{}".format(layers)).rect)
+					#If the rectangle has no image
+					else:
+						#Draw a block coloured rectangle
+						pygame.draw.rect(self.screen, eval("self.{}".format(layers)).colour, eval("self.{}".format(layers)).rect)
 
 	#Define an update function
 	def update(self):
 
 		#Iterate through the rectangles in the rectangle array
 		for rects in self.rectangles:
-			#Update every rectangle given
-			eval("self.{}".format(rects)).update()
+			#Go through the layers
+			for layers in rects:
+				#Update every rectangle given
+				eval("self.{}".format(layers)).update()
 
 		#Run the draw function
 		self.draw()

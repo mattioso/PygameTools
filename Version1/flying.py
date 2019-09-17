@@ -10,14 +10,16 @@ from random import randint
 game = Aid(600, 600)
 
 #Add the player rectangle
-game.addRect("player", width=30, height=30, colour=(0,0,255))
+game.addRect("player", imgLoc="res/Player.png", layer=1)
 #Set the players x to 20, and the y to the middle of the screen
 game.player.x = 20
 game.player.y = game.width / 2 - game.player.width / 2
 
 #Add the five enemies
 for x in range(5):
-	game.addRect("enemy{}".format(x), width=30, height=30)
+	game.addRect("enemy{}".format(x), imgLoc="res/Laser.png", layer=2)
+
+game.addRect("backdrop", imgLoc="res/background.png", layer=0)
 
 #Define a function to iterate through the enemies and reset them all
 def resetEnemies():
@@ -45,6 +47,14 @@ while 1:
 	#If the down jets is pressed, move the player down by 6 pixels
 	if keys[K_DOWN]:
 		game.player.y += 6
+
+	#If the player goes off the top of the screen, stop them
+	if game.player.y <= 0:
+		game.player.y = 0
+
+	#IF the player goes off the bottom of the screen, stop them
+	if game.player.y >= game.height - game.player.height:
+		game.player.y = game.height - game.player.height
 
 	#Iterate through the enemies
 	for x in range(5):

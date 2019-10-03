@@ -20,7 +20,7 @@ class Aid(object):
 		self.screen = pygame.display.set_mode(self.size)
 
 		#Create an array to hold the names of the rectangles added
-		self.rectangles = []
+		self.images = []
 
 		#Set the colour to the given colour
 		self.colour = backcolour
@@ -63,19 +63,39 @@ class Aid(object):
 
 		#Try to add the rectangle to the correct layer list inside of the rectangles list
 		try:
-			self.rectangles[layer].append(name)
+			self.images[layer].append(name)
 		#If that list doesn't exist
 		except:
 			#Start a while loop
 			while 1:
 				#Try to add the layer in again
 				try:
-					self.rectangles[layer].append(name)
+					self.images[layer].append(name)
 					#If the name is added, break out of the loop
 					break
 				except:
 					#If the layer list is not present, add another list to rectangles
-					self.rectangles.append([])
+					self.images.append([])
+
+	def addText(self, name, text, size, layer, font="monospace", colour=(255, 255, 255)):
+
+		setattr(self, name, Text(text, size, font, colour))
+
+		#Try to add the rectangle to the correct layer list inside of the images list
+		try:
+			self.images[layer].append(name)
+		#If that list doesn't exist
+		except:
+			#Start a while loop
+			while 1:
+				#Try to add the layer in again
+				try:
+					self.images[layer].append(name)
+					#If the name is added, break out of the loop
+					break
+				except:
+					#If the layer list is not present, add another list to images
+					self.images.append([])
 
 	#Define a function to run the commands the need running last in a game loop
 	def closingCommands(self):
@@ -97,7 +117,7 @@ class Aid(object):
 		self.screen.fill(self.colour)
 
 		#For every rectangle in rectangles array
-		for rects in self.rectangles:
+		for rects in self.images:
 			#Iterate through the layers, so the game is drawn in the desired order
 			for layers in rects:
 				#Check if the rectangle wants to be drawn
@@ -111,15 +131,20 @@ class Aid(object):
 						#Draw a block coloured rectangle
 						pygame.draw.rect(self.screen, eval("self.{}".format(layers)).colour, eval("self.{}".format(layers)).rect)
 
+					#If the eval is text
+					if eval("self.{}".format(layers)).type == 3:
+						self.screen.blit(eval("self.{}".format(layers)).renderedText, (eval("self.{}".format(layers)).x, eval("self.{}".format(layers)).y))
+
 	#Define an update function
 	def update(self):
 
 		#Iterate through the rectangles in the rectangle array
-		for rects in self.rectangles:
+		for rects in self.images:
 			#Go through the layers
 			for layers in rects:
 				#Update every rectangle given
-				eval("self.{}".format(layers)).update()
+				if not eval("self.{}".format(layers)).type == 3:
+					eval("self.{}".format(layers)).update()
 
 		#Run the draw function
 		self.draw()
@@ -237,3 +262,41 @@ class Rectangle(object):
 		#Set the width and the height to the different values
 		self.width = self.rect.width
 		self.height = self.rect.height
+
+#Create a class to handle text displays
+class Text(object):
+
+	#Run the constructor
+	def __init__(self, text, size, font, colour):
+
+		#Save the text and colour
+		self.text = text
+		self.colour = colour
+
+		#Try to access a sys font 
+		try:
+			self.font = pygame.Font.SysFont(font, size)
+		#If not, import from a font file
+		except:
+			self.font = pygame.font.Font(font, size)
+
+		#Render the text
+		self.renderedText = self.font.render(self.text, 1, self.colour)
+
+		#Set the x and y to 0 
+		self.x = 0
+		self.y = 0
+		#Get the width and height
+		self.width = self.renderedText.get_width()
+		self.height = self.renderedText.get_height()
+		
+		#Set the drawing and type variables
+		self.drawing = True
+		self.type = 3
+
+	#A function to change the displayed text
+	def setText(self, text):
+		#Save the new text value
+		self.text = text
+		#Re-render the text
+		self.renderedText = self.font.render(self.text, 1, self.colour)

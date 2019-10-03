@@ -275,7 +275,7 @@ class Text(object):
 
 		#Try to access a sys font 
 		try:
-			self.font = pygame.Font.SysFont(font, size)
+			self.font = pygame.font.SysFont(font, size)
 		#If not, import from a font file
 		except:
 			self.font = pygame.font.Font(font, size)

@@ -61,27 +61,60 @@ class Aid(object):
 			else:
 				setattr(self, name, Rectangle(image=pygame.image.load(imgLoc)))
 
-		#Try to add the rectangle to the correct layer list inside of the rectangles list
-		try:
-			self.images[layer].append(name)
-		#If that list doesn't exist
-		except:
-			#Start a while loop
-			while 1:
-				#Try to add the layer in again
-				try:
-					self.images[layer].append(name)
-					#If the name is added, break out of the loop
-					break
-				except:
-					#If the layer list is not present, add another list to rectangles
-					self.images.append([])
+		self.addImage(name, layer)
 
+	#Create a function to create text on the screen easily
 	def addText(self, name, text, size, layer, font="monospace", colour=(255, 255, 255)):
 
+		#Set a varible to the given name
 		setattr(self, name, Text(text, size, font, colour))
 
-		#Try to add the rectangle to the correct layer list inside of the images list
+		#Add the image to the images list
+		self.addImage(name, layer)
+
+	#Create a function to add buttons to the text easily
+	def addButton(self, name, layer, imgLoc="", width="", height="", size=20, text="", font="monospace", colour=(255, 0, 0), txtColour=(255, 255, 255)):
+
+		#Similar code to the rectangle function
+		if imgLoc == "" and width == "" and height == "":
+			raise Exception("Either a location or dimensions should be specified")
+		#If an image is passed
+		if not imgLoc == "":
+			#Start a try except
+			try:
+			
+				#Check if the given value is a list
+				imgLoc[0]
+
+				#Create a temporary empty list 
+				self.tempImages = []
+
+				#Iterate through the values given
+				for loc in imgLoc:
+					#Add the pygame image to the temp images list
+					self.tempImages.append(pygame.image.load(loc))
+				
+				#Set a button class to the given name
+				setattr(self, name, Button(img=self.tempImages, text=text, size=size, font=font, txtColour=txtColour))
+
+				#Delete the tempary images list
+				del self.tempImages
+
+			#If it is not a list of values
+			except:
+				#Set the name to the Button value
+				setattr(self, name, Button(img=pygame.image.load(imgLoc), text=text, size=size, font=font, txtColour=txtColour))
+
+		#If an image ins't passed
+		else:
+			#Set the variable name to a button with width and height
+			setattr(self, name, Button(width=width, height=height, text=text, size=size, font=font, colour=colour, txtColour=txtColour))
+
+		#Add the image
+		self.addImage(name, layer)
+	
+	#Define a function to add images to the images list
+	def addImage(self, name, layer):
 		try:
 			self.images[layer].append(name)
 		#If that list doesn't exist
@@ -122,18 +155,25 @@ class Aid(object):
 			for layers in rects:
 				#Check if the rectangle wants to be drawn
 				if eval("self.{}".format(layers)).drawing:
-					#If the rectangle has an image to draw
-					if eval("self.{}".format(layers)).type == 0 or eval("self.{}".format(layers)).type == 2:
+					#If the rectangle has an image to draw, or is a button
+					if eval("self.{}".format(layers)).type == "ImageRect" or eval("self.{}".format(layers)).type == "MultiImageRect" or eval("self.{}".format(layers)).type == "ButtonImage":
 						#Draw the image
 						self.screen.blit(eval("self.{}".format(layers)).image, eval("self.{}".format(layers)).rect)
 					#If the rectangle has no image
-					if eval("self.{}".format(layers)).type == 1:
+					if eval("self.{}".format(layers)).type == "BlockRect":
 						#Draw a block coloured rectangle
 						pygame.draw.rect(self.screen, eval("self.{}".format(layers)).colour, eval("self.{}".format(layers)).rect)
 
 					#If the eval is text
-					if eval("self.{}".format(layers)).type == 3:
+					if eval("self.{}".format(layers)).type == "Text":
 						self.screen.blit(eval("self.{}".format(layers)).renderedText, (eval("self.{}".format(layers)).x, eval("self.{}".format(layers)).y))
+
+					#If the eval is a button
+					if eval("self.{}".format(layers)).type == "BlockButton":
+						#Draw the rectangle
+						pygame.draw.rect(self.screen, eval("self.{}".format(layers)).colour, eval("self.{}".format(layers)).rect)
+						#Draw the text
+						self.screen.blit(eval("self.{}".format(layers)).text.renderedText, (eval("self.{}".format(layers)).text.x, eval("self.{}".format(layers)).text.y))
 
 	#Define an update function
 	def update(self):
@@ -143,7 +183,7 @@ class Aid(object):
 			#Go through the layers
 			for layers in rects:
 				#Update every rectangle given
-				if not eval("self.{}".format(layers)).type == 3:
+				if not eval("self.{}".format(layers)).type == "Text":
 					eval("self.{}".format(layers)).update()
 
 		#Run the draw function
@@ -193,7 +233,7 @@ class Rectangle(object):
 			self.height = self.rect.height
 
 			#Set the type to 2
-			self.type = 2
+			self.type = "MultiImageRect"
 
 		except:
 			#if an image has been passed
@@ -206,7 +246,7 @@ class Rectangle(object):
 				self.width = self.rect.width
 				self.height = self.rect.height
 				#Set the type to 0
-				self.type = 0
+				self.type = "ImageRect"
 
 			#If a set of value have been given
 			else:
@@ -216,7 +256,7 @@ class Rectangle(object):
 				self.width = width
 				self.height = height
 				#Set the type to 1
-				self.type = 1
+				self.type = "BlockRect"
 				#Set the colour to the given colour
 				self.colour = colour
 
@@ -248,8 +288,14 @@ class Rectangle(object):
 	def setImage(self, num):
 
 		#Raise an error if the rectangle cant be animated
-		if not self.type == 2:
+		if not self.type == "MultiImageRect" and not self.type == "ButtonImage":
 			raise Exception("Only animatable images can use this function")
+
+		if self.type == "ButtonImage":
+			try:
+				self.images[0]
+			except:
+				raise Exception("Only one image provided for the button")
 
 		#Raise an error if the given number is bigger than the size of the list
 		if num > len(self.images) - 1:
@@ -262,6 +308,14 @@ class Rectangle(object):
 		#Set the width and the height to the different values
 		self.width = self.rect.width
 		self.height = self.rect.height
+
+	#Check if the rectangle is being pressed
+	def pressed(self, mousePos, mouseButtons):
+		return mouseButtons[0] == 1 and self.inBox(mousePos)
+
+	#Check if the mouse is over the rectangles
+	def inBox(self, mousePos):
+		return self.x < mousePos[0] < self.x + self.width and self.y < mousePos[1] < self.y + self.height
 
 #Create a class to handle text displays
 class Text(object):
@@ -292,7 +346,7 @@ class Text(object):
 		
 		#Set the drawing and type variables
 		self.drawing = True
-		self.type = 3
+		self.type = "Text"
 
 	#A function to change the displayed text
 	def setText(self, text):
@@ -300,3 +354,51 @@ class Text(object):
 		self.text = text
 		#Re-render the text
 		self.renderedText = self.font.render(self.text, 1, self.colour)
+
+	def changeSize(self, fontSize):
+
+		self.fontSize = fontSize
+
+		#Try to access a sys font 
+		try:
+			self.font = pygame.font.SysFont(font, size)
+		#If not, import from a font file
+		except:
+			self.font = pygame.font.Font(font, size)
+
+	def changeColour(self, colour):
+
+		self.colour = colour
+
+#Define a class to create buttons
+class Button(Rectangle):
+
+	def __init__(self, img="", width="", height="", text="", size="", font="", colour="", txtColour=""):
+
+		#Super the rectangle class
+		#This allows for the use of lists of images as well
+		super().__init__(image=img, width=width, height=height, colour=colour)
+		
+		#If an image is given, set the type to 4
+		if not img == "":
+			self.type = "ButtonImage"
+
+		#If no image is given
+		else:
+			#Set the type to 5
+			self.type = "BlockButton"
+			#Create a text object
+			self.text = Text(text, size, font, txtColour)
+
+		#Set active to false
+		self.active = False
+
+	#Create an update function
+	def update(self):
+		#Super the higher fuction
+		super().update()
+		#If text is drawn seperatly
+		if self.type == "BlockButton":
+			#Set the x and the y of the text to the middle of the rectangle
+			self.text.x = self.x + self.width / 2 - self.text.width / 2
+			self.text.y = self.y + self.height / 2 - self.text.height / 2
